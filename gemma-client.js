@@ -109,3 +109,74 @@ export async function callGemmaService(
 
 // Note: We are not including the multimodal function here for simplicity,
 // but it could be added to this file later if needed.
+
+
+/**
+ * Initiates a STREAMING request to the Gemma/Ollama Cloud Run service.
+ * Handles both text-only and multimodal requests.
+ * Returns the Axios response stream object for processing.
+ * @param {string} serviceUrl
+ * @param {string} bearerToken
+ * @param {string} prompt
+ * @param {string} modelName
+ * @param {string[]} [images] Optional array of base64 encoded image strings.
+ * @param {number} [timeout=600000]
+ * @returns {Promise<import('axios').AxiosResponse<NodeJS.ReadableStream>>}
+ * @throws {Error}
+ */
+export async function callGemmaServiceStream(
+    serviceUrl,
+    bearerToken,
+    prompt,
+    modelName,
+    images = null, // <<< ADD optional images parameter
+    timeout = 600000
+  ) {
+    if (!serviceUrl || !bearerToken || !prompt || !modelName) {
+      throw new Error(
+        'Service URL, Bearer Token, Prompt, and Model Name are required for callGemmaServiceStream.'
+      );
+    }
+  
+    const apiUrl = `${serviceUrl.replace(/\/$/, '')}/api/generate`;
+    const isMultimodal = images && Array.isArray(images) && images.length > 0;
+    // console.log(`Calling Gemma stream: ${apiUrl} | Model: ${modelName} | Multimodal: ${isMultimodal}`); // Debug
+  
+    // --- Construct Payload --- <<< MODIFIED >>>
+    const requestData = {
+      model: modelName,
+      prompt: prompt,
+      stream: true,
+    };
+    if (isMultimodal) {
+      requestData.images = images; // Add images array if present
+    }
+    // --- End modification ---
+  
+    const config = {
+      method: 'post',
+      url: apiUrl,
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json', // Ollama API still expects JSON body
+        Accept: 'application/x-ndjson',
+      },
+      data: requestData, // Send the potentially multimodal payload
+      responseType: 'stream',
+      timeout: timeout,
+    };
+  
+    try {
+      const response = await axios(config);
+       if (response.status >= 400) {
+            throw new Error(`Request failed with status code: ${response.status}`);
+       }
+      return response;
+    } catch (error) {
+      console.error('Error initiating Gemma stream request:', error.message);
+       if (axios.isAxiosError(error)) {
+         throw new Error(`Gemma stream initiation failed: ${error.message}`);
+       }
+      throw error;
+    }
+  }

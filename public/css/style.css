@@ -1,0 +1,256 @@
+/* public/css/style.css */
+
+/* Define variables for light and dark themes */
+:root {
+    --bg-color-light: #ffffff;
+    --text-color-light: #333333;
+    --border-color-light: #ccc;
+    --result-bg-light: #f9f9f9;
+    --error-bg-light: #ffeeee;
+    --error-text-light: #a00;
+    --error-border-light: red;
+    --button-bg-light: #f0f0f0;
+    --button-text-light: #333;
+
+    --bg-color-dark: #2c2c2c;
+    --text-color-dark: #e0e0e0;
+    --border-color-dark: #555;
+    --result-bg-dark: #3a3a3a;
+    --error-bg-dark: #5c3a3a;
+    --error-text-dark: #ffabab;
+    --error-border-dark: #ff5555;
+    --button-bg-dark: #555;
+    --button-text-dark: #e0e0e0;
+}
+
+/* Default to light theme */
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    padding: 20px;
+    max-width: 800px;
+    margin: auto;
+    background-color: var(--bg-color-light);
+    color: var(--text-color-light);
+    transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+}
+
+/* Dark theme class */
+body.dark-theme {
+    background-color: var(--bg-color-dark);
+    color: var(--text-color-dark);
+}
+
+h1, h2 {
+    border-bottom: 1px solid var(--border-color-light);
+    padding-bottom: 5px;
+}
+body.dark-theme h1, body.dark-theme h2 {
+    border-bottom-color: var(--border-color-dark);
+}
+
+textarea {
+    width: 98%;
+    margin-bottom: 10px;
+    padding: 8px;
+    font-size: 1rem;
+    border: 1px solid var(--border-color-light);
+    background-color: var(--bg-color-light);
+    color: var(--text-color-light);
+    border-radius: 4px;
+}
+body.dark-theme textarea {
+    border-color: var(--border-color-dark);
+    background-color: var(--result-bg-dark); /* Slightly different bg for inputs */
+    color: var(--text-color-dark);
+}
+
+
+button, #theme-toggle {
+    padding: 10px 15px;
+    font-size: 1rem;
+    cursor: pointer;
+    border: 1px solid var(--border-color-light);
+    background-color: var(--button-bg-light);
+    color: var(--button-text-light);
+    border-radius: 4px;
+    margin-right: 5px; /* Add some space for toggle button */
+}
+body.dark-theme button, body.dark-theme #theme-toggle {
+    border-color: var(--border-color-dark);
+    background-color: var(--button-bg-dark);
+    color: var(--button-text-dark);
+}
+
+button:hover, #theme-toggle:hover {
+    opacity: 0.8;
+}
+
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.result-box {
+    border: 1px solid var(--border-color-light);
+    background-color: var(--result-bg-light);
+    padding: 15px;
+    margin-top: 20px;
+    white-space: pre-wrap; /* Preserve whitespace and wrap lines */
+    font-family: monospace;
+    border-radius: 4px;
+}
+body.dark-theme .result-box {
+    border-color: var(--border-color-dark);
+    background-color: var(--result-bg-dark);
+}
+
+
+.error-box {
+    border: 1px solid var(--error-border-light);
+    background-color: var(--error-bg-light);
+    color: var(--error-text-light);
+    padding: 15px;
+    margin-top: 20px;
+    white-space: pre-wrap;
+    border-radius: 4px;
+}
+ body.dark-theme .error-box {
+    border-color: var(--error-border-dark);
+    background-color: var(--error-bg-dark);
+    color: var(--error-text-dark);
+ }
+
+ /* Style for the theme toggle button */
+ #theme-toggle {
+    float: right; /* Position toggle button */
+ }
+
+
+
+ /* --- Chat Output & Streaming Styles --- */
+#chat-output {
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color-light);
+    border-radius: 5px;
+    padding: 15px;
+    background-color: var(--result-bg-light); /* Light background for chat history */
+}
+body.dark-theme #chat-output {
+    border-color: var(--border-color-dark);
+    background-color: var(--result-bg-dark);
+}
+
+/* Style for individual history entries already exists (.history-entry) */
+/* Ensure markdown rendering within history looks okay */
+.history-response div { /* Target the div holding marked output */
+    font-family: sans-serif; /* Reset from monospace if needed */
+    white-space: normal; /* Allow normal wrapping */
+}
+
+body.dark-theme .history-response div a { /* Target the div holding marked output */
+    font-family: Arial, Helvetica, sans-serif; /* Reset from monospace if needed */
+    color: #87CEFF;
+}
+
+.history-response div a { /* Target the div holding marked output */
+    font-family: Arial, Helvetica, sans-serif; /* Reset from monospace if needed */
+    color: #44677D;
+}
+
+.history-response div pre { /* Style code blocks from markdown */
+     background-color: rgba(0,0,0,0.05);
+     padding: 10px;
+     border-radius: 4px;
+     overflow-x: auto;
+     white-space: pre;
+}
+body.dark-theme .history-response div pre {
+    background-color: rgba(255,255,255,0.1);
+}
+
+
+/* Placeholder for current streaming response */
+#current-response-placeholder {
+    /* Styles inherited from .result-box */
+    margin-top: 10px; /* Space below history */
+    margin-bottom: 20px; /* Space above form */
+}
+#current-response-placeholder strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+#streaming-content pre { /* Style the temporary pre tag used for streaming */
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: monospace;
+}
+#streaming-content div { /* Style the final rendered markdown */
+     font-family: sans-serif;
+     white-space: normal;
+}
+#streaming-content div pre { /* Style code blocks */
+     background-color: rgba(0,0,0,0.05);
+     padding: 10px;
+     border-radius: 4px;
+     overflow-x: auto;
+     white-space: pre;
+}
+body.dark-theme #streaming-content div pre {
+    background-color: rgba(255,255,255,0.1);
+}
+
+
+#loading-indicator {
+    font-style: italic;
+    color: #888;
+}
+body.dark-theme #loading-indicator {
+    color: #aaa;
+}
+
+#no-history-msg {
+    font-style: italic;
+    color: #888;
+     margin-bottom: 15px;
+}
+body.dark-theme #no-history-msg {
+    color: #aaa;
+}
+
+#prompt-form {
+    margin-top: 20px;
+}
+
+
+
+
+/* --- CSS Loader Styles --- */
+.loader {
+    border: 4px solid rgba(180, 180, 180, 0.3); /* Light grey border */
+    border-radius: 50%;
+    border-top: 4px solid var(--text-color-light); /* Spinner color (matches text) */
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 15px auto; /* Center the spinner */
+  }
+  
+  /* Dark theme spinner color */
+  body.dark-theme .loader {
+     border-top-color: var(--text-color-dark);
+     border-left-color: rgba(200, 200, 200, 0.3); /* Slightly adjust other borders for dark */
+     border-right-color: rgba(200, 200, 200, 0.3);
+     border-bottom-color: rgba(200, 200, 200, 0.3);
+  }
+  
+  
+  /* Spinner Animation */
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }

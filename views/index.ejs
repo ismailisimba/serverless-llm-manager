@@ -3,45 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemma Management UI</title>
-    <style>
-        body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: auto;}
-        textarea { width: 98%; margin-bottom: 10px; padding: 5px; font-size: 1rem; }
-        button { padding: 10px 15px; font-size: 1rem; cursor: pointer; }
-        label { display: block; margin-bottom: 5px; font-weight: bold;}
-        .result-box { border: 1px solid #ccc; background-color: #f9f9f9; padding: 15px; margin-top: 20px; white-space: pre-wrap; /* Preserve whitespace and wrap lines */ font-family: monospace; }
-        .error-box { border: 1px solid red; background-color: #ffeeee; color: #a00; padding: 15px; margin-top: 20px; white-space: pre-wrap; }
-    </style>
+    <title>Gemma Chat UI</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/marked.js"></script>
 </head>
 <body>
+    
+    <button id="theme-toggle">Toggle Theme</button>
 
-    <h1>Gemma Prompt Interface</h1>
+    <h1>Gemma Chat Interface</h1>
 
-    <form action="/generate" method="POST">
+    <div id="download-buttons" style="margin-bottom: 15px;">
+        <button id="download-txt">Download TXT</button>
+        <button id="download-docx">Download DOCX</button>
+    </div>
+
+    <div id="chat-output">
+        <h2>Conversation</h2>
+
+    </div>
+    <hr />
+
+    <div id="current-response-placeholder" class="result-box" style="display: none; min-height: 50px;">
+        <strong>Gemma:</strong>
+        <div class="loader" id="css-loader" style="display: none;"></div>
+        <div id="streaming-content"></div>
+        <div id="loading-indicator" style="margin-top: 10px; display: none;">Receiving response...</div>
+    </div>
+
+    <div id="js-error-box" class="error-box" style="display: none;"></div>
+
+
+    <form id="prompt-form" enctype="multipart/form-data">
         <div>
             <label for="prompt">Enter your prompt:</label>
-            <textarea id="prompt" name="prompt" rows="8" required placeholder="e.g., Explain the theory of relativity in simple terms."></textarea>
+            <textarea id="prompt" name="prompt" rows="5" required placeholder="e.g., Describe this image..."></textarea>
         </div>
-        <div>
-            <button type="submit">Generate Response</button>
+
+        <div style="margin-top: 10px;">
+            <label for="images">Upload Images (Optional):</label>
+            <input type="file" id="images" name="images" multiple accept="image/*">
+             <small>(Max 5MB per file recommended)</small> </div>
+        <div style="margin-top: 15px;">
+            <button type="submit" id="submit-button">Send</button>
         </div>
     </form>
 
-    <%# Conditionally display error messages %>
-    <% if (locals.error) { %>
-      <div class="error-box">
-        <h2>Error:</h2>
-        <pre><%= error %></pre> <%# Using <pre> to preserve error message formatting %>
-      </div>
-    <% } %>
-
-    <%# Conditionally display the successful result %>
-    <% if (locals.result) { %>
-      <div class="result-box">
-        <h2>Result:</h2>
-        <pre><%= result %></pre> <%# Using <pre> to preserve result formatting (like code blocks, lists) %>
-      </div>
-    <% } %>
-
+    <script src="/js/main.js" type="module"></script>
 </body>
 </html>
