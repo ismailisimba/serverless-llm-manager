@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Bouncing Bird</title>
+<style>
+  #bird {
+    width: 150px;
+    height: 150px;
+    background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/%E6%B0%B4%E9%A4%83%E5%9C%A8ponytown%E7%9A%84%E8%A7%92%E8%89%B22.gif/532px-%E6%B0%B4%E9%A4%83%E5%9C%A8ponytown%E7%9A%84%E8%A7%92%E8%89%B22.gif'); /* Replace with your preferred bird image URL */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    position: absolute;
+    top: 150;
+    left: 150;
+    animation: bounce 2s infinite;
+  }
+
+  @keyframes bounce {
+    0% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-50px); /* Adjust bounce height */
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  body{
+    min-height: 100vh;
+    padding-top: 50px;
+  }
+</style>
+</head>
+<body>
+
+<div id="bird"></div>
+
+<script>
+  const birdElement = document.getElementById('bird');
+
+  // Function to randomly adjust bounce height
+  function randomBounce() {
+    const bounceHeight = Math.random() * 30; // Adjust range as needed
+    birdElement.style.animationDuration = bounceHeight + 's';
+  }
+
+  // Call the function to start the bouncing
+  randomBounce();
+
+  // Call the function every few seconds to keep it random
+  setInterval(randomBounce, 3000); // Call every 3 seconds (adjust as desired)
+</script>
+
+</body>
+</html>
