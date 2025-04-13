@@ -1,6 +1,34 @@
 // public/js/main.js
 console.log('Main JS loaded V2 - Streaming Ready');
 
+
+
+// Add near the top of your main.js or inside DOMContentLoaded
+
+const menuToggleButton = document.getElementById('menu-toggle');
+const menuContent = document.getElementById('app-menu-content');
+
+if (menuToggleButton && menuContent) {
+    menuToggleButton.addEventListener('click', () => {
+        const isExpanded = menuToggleButton.getAttribute('aria-expanded') === 'true';
+        menuContent.classList.toggle('menu-open');
+        menuToggleButton.setAttribute('aria-expanded', !isExpanded);
+    });
+
+    // Optional: Close menu if clicking outside
+    document.addEventListener('click', (event) => {
+        const isClickInsideMenu = menuContent.contains(event.target);
+        const isClickOnToggleButton = menuToggleButton.contains(event.target);
+
+        if (!isClickInsideMenu && !isClickOnToggleButton && menuContent.classList.contains('menu-open')) {
+            menuContent.classList.remove('menu-open');
+            menuToggleButton.setAttribute('aria-expanded', 'false');
+        }
+    });
+}
+
+
+
 // --- DOM Elements ---
 const themeToggleButton = document.getElementById('theme-toggle');
 const bodyElement = document.body;
@@ -547,3 +575,66 @@ if (downloadDocxButton) {
 if (downloadPdfButton) { // <<< ADD Listener for PDF
       downloadPdfButton.addEventListener('click', () => handleDownload('pdf'));
 }
+
+
+
+
+
+
+
+
+
+// Add this within your existing main.js, perhaps inside a DOMContentLoaded listener
+
+const donateButton = document.getElementById('donate-button');
+const phoneNumberInput = document.getElementById('phone-number');
+const donationStatus = document.getElementById('donation-status');
+
+if (donateButton && phoneNumberInput && donationStatus) {
+    donateButton.addEventListener('click', async () => {
+        const phoneNumber = phoneNumberInput.value.trim();
+
+        // Basic validation (redundant with backend, but good for UX)
+        const phoneRegex = /^\+255[67]\d{8}$/;
+        if (!phoneRegex.test(phoneNumber)) {
+            donationStatus.textContent = 'Nambari ya simu si sahihi. (Invalid phone number.)';
+            donationStatus.className = 'status-message error';
+            return;
+        }
+
+        donationStatus.textContent = 'Inashughulikia... (Processing...)';
+        donationStatus.className = 'status-message processing';
+        donateButton.disabled = true; // Prevent multiple clicks
+
+        try {
+            const response = await fetch('/api/initiate-donation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Add X-User-ID header if needed by your session/logging logic
+                     'X-User-ID': userId // Replace with how you get/store user ID on client
+                },
+                body: JSON.stringify({ phoneNumber: phoneNumber })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                donationStatus.textContent = result.message; // "Check your phone..."
+                donationStatus.className = 'status-message success';
+                phoneNumberInput.value = ''; // Clear input on success maybe?
+            } else {
+                donationStatus.textContent = `Error: ${result.message || 'Failed to initiate.'}`;
+                donationStatus.className = 'status-message error';
+            }
+
+        } catch (error) {
+            console.error('Error initiating donation:', error);
+            donationStatus.textContent = 'System error. Please try again.';
+            donationStatus.className = 'status-message error';
+        } finally {
+            donateButton.disabled = false; // Re-enable button
+        }
+    });
+}
+

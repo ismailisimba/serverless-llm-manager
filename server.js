@@ -9,12 +9,17 @@ import { formidable } from 'formidable';
 import * as fs from 'fs/promises';
 import { logSessionEvent } from './bigquery-logger.js';
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
 
 // Import our Gemma client and GCS Session Manager
 // <<< USE THE NEW CHAT FUNCTIONS >>>
 import { fetchIdentityToken, callGemmaChatService, callGemmaChatServiceStream } from './gemma-client.js';
 import { sessionMiddleware } from './session-manager.js';
 import DownloadGenerator from './download-generator.js';
+
+// <<< Import the ClickPesa client functions >>>
+import { getClickPesaAuthToken, initiateClickPesaUssdPush } from './clickpesa-client.js';
+
 
 dotenv.config();
 const app = express();
@@ -30,6 +35,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 app.use(sessionMiddleware);
+app.use(express.json());
 // Body parsers are applied per-route where needed
 
 // --- Routes ---
@@ -409,6 +415,135 @@ app.get('/download/pdf', async (req, res) => {
         res.status(500).send(`Error generating PDF document: ${error.message}`);
     }
 });
+
+
+
+
+// --- Route to Initiate Donation (Updated) ---
+app.post('/api/initiate-donation', async (req, res) => {
+    const sessionId = req.gemmaSession.id;
+    const userId = req.gemmaSession.userId || 'anonymous';
+    const { phoneNumber } = req.body;
+
+    console.log(`[Session: ${sessionId}] Donation attempt. Phone: ${phoneNumber}`);
+
+    if (!phoneNumber || !/^\+255[67]\d{8}$/.test(phoneNumber)) {
+        return res.status(400).json({ success: false, message: "Nambari ya simu si sahihi. Umbizo: +255xxxxxxxxx (Invalid phone number. Format: +255xxxxxxxxx)" });
+    }
+
+    // <<< Retrieve ClickPesa Credentials from environment (set via Secret Manager) >>>
+    const CLICKPESA_CLIENT_ID = process.env.CLICKPESA_CLIENT_ID;
+    const CLICKPESA_API_KEY = process.env.CLICKPESA_API_KEY;
+    const CLICKPESA_WEBHOOK_URL = process.env.CLICKPESA_WEBHOOK_URL; // Set via --set-env-vars
+
+    if (!CLICKPESA_CLIENT_ID || !CLICKPESA_API_KEY || !CLICKPESA_WEBHOOK_URL) {
+        console.error(`[Session: ${sessionId}] ClickPesa credentials or Webhook URL missing server-side.`);
+        return res.status(500).json({ success: false, message: "Tatizo la kimtandao. (Server configuration error.)" });
+    }
+
+    const amount = "1500"; // Amount must be string per ClickPesa docs
+    const currency = "TZS";
+    const orderReference = uuidv4().substring(0, 8); // Shorter, unique ID
+    const description = "Gemma UI Donation"; // Optional, check if ClickPesa uses it
+
+    try {
+        // 1. Get Auth Token
+        console.log(`[Session: ${sessionId}] Getting ClickPesa Auth Token. Ref: ${orderReference}`);
+        const authToken = await getClickPesaAuthToken(CLICKPESA_CLIENT_ID, CLICKPESA_API_KEY);
+        console.log(authToken, "authToken")
+
+        // 2. Prepare Payload for USSD Push
+        const payload = {
+            amount: amount,
+            currency: currency,
+            orderReference: orderReference,
+            phoneNumber: phoneNumber.replaceAll("+",""),
+            // checksum: "...", // Add if required and calculated
+             // description: description, // Add if supported/useful
+             // webhook_url: CLICKPESA_WEBHOOK_URL // Add if required in this specific request
+        };
+         // Note: The webhook URL might be configured globally in ClickPesa dashboard
+         // rather than per-request. Confirm with ClickPesa docs.
+
+        // 3. Initiate USSD Push
+        console.log(`[Session: ${sessionId}] Calling ClickPesa Initiate USSD Push. Ref: ${orderReference}`);
+        const clickPesaResponse = await initiateClickPesaUssdPush(authToken, payload);
+
+        // 4. Handle Response (adapt based on actual ClickPesa response)
+        // Docs suggest response includes status: PROCESSING on successful initiation
+        if (clickPesaResponse && clickPesaResponse.status === 'PROCESSING') {
+            console.log(`[Session: ${sessionId}] ClickPesa initiation successful. Ref: ${orderReference}. Status: ${clickPesaResponse.status}`);
+             // Log initiation attempt maybe?
+             logSessionEvent({
+                  session_id: sessionId,
+                  user_id: userId,
+                  request_id: orderReference, // Use orderRef as request ID for donation
+                  event_type: 'donation_initiated',
+                  merchant_ref: orderReference,
+                  donation_amount: parseInt(amount),
+                  // phone_number_hash: require('crypto').createHash('sha256').update(phoneNumber).digest('hex') // Hash PII if logging
+                  clickpesa_txn_id: clickPesaResponse.id // Log ClickPesa's ID
+             });
+            res.json({ success: true, message: "Tafadhali angalia simu yako kuidhinisha malipo TZS 1500. (Please check your phone to authorize the TZS 1500 payment.)" });
+        } else {
+            // Handle cases where initiation didn't return PROCESSING status
+            console.warn(`[Session: ${sessionId}] ClickPesa initiation did not return PROCESSING status. Ref: ${orderReference}`, clickPesaResponse);
+            res.status(400).json({ success: false, message: `ClickPesa Error: ${clickPesaResponse?.message || 'Initiation failed. Status: ' + clickPesaResponse?.status}` });
+        }
+
+    } catch (error) {
+        console.error(`[Session: ${sessionId}] Failed donation process. Ref: ${orderReference}:`, error.message);
+        // Log system error maybe?
+        res.status(500).json({ success: false, message: `Tatizo la mfumo: ${error.message}` });
+    }
+});
+
+// --- Route to Handle ClickPesa Webhook Notifications (Concept remains) ---
+app.post('/api/clickpesa-webhook', express.json(), async (req, res) => {
+    // <<< IMPLEMENT WEBHOOK VERIFICATION BASED ON CLICKPESA DOCS >>>
+    // const isValid = verifyClickPesaSignature(req.headers['x-clickpesa-signature'], req.body);
+    // if (!isValid) { return res.status(403).send('Invalid Signature'); }
+
+    console.log("Received ClickPesa Webhook:", JSON.stringify(req.body, null, 2));
+    const notification = req.body;
+    const orderReference = notification?.orderReference; // Use the field from ClickPesa docs
+    const transactionStatus = notification?.status; // e.g., SUCCESS, FAILED
+    const clickpesaTxnId = notification?.id; // ClickPesa's transaction ID
+
+    if (orderReference && transactionStatus && clickpesaTxnId) {
+        try {
+            await logSessionEvent({
+                session_id: 'webhook-' + (orderReference.split('-')[1] || 'unknown'), // Infer session part? Needs better linking.
+                request_id: orderReference,
+                event_type: `donation_${transactionStatus.toLowerCase()}`, // donation_success, donation_failed
+                merchant_ref: orderReference,
+                clickpesa_txn_id: clickpesaTxnId,
+                donation_amount: notification?.collectedAmount ? parseFloat(notification.collectedAmount) : null,
+                // phone_number_hash: notification?.phoneNumber ? require('crypto').createHash('sha256').update(notification.phoneNumber).digest('hex') : null, // Hash PII
+                webhook_payload: JSON.stringify(notification).substring(0, 1000)
+            });
+            console.log(`Webhook for OrderRef: ${orderReference} logged. Status: ${transactionStatus}`);
+        } catch (logError) {
+            console.error(`Failed to log webhook event for OrderRef: ${orderReference}`, logError);
+        }
+    } else {
+        console.warn("Received incomplete webhook data.");
+    }
+
+    res.status(200).send('OK'); // Acknowledge receipt
+});
+
+
+
+
+
+
+
+
+
+
+
+
 
 // --- API Route to get history (remains the same) ---
 app.get('/api/history', (req, res) => {

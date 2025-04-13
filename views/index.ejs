@@ -8,6 +8,22 @@
     <script src="/js/marked.js"></script>
 </head>
 <body>
+    <div class="menu-container">
+        <button id="menu-toggle" aria-label="Toggle Menu" aria-expanded="false">
+             ☰ </button>
+        <nav class="app-menu" id="app-menu-content" aria-labelledby="menu-toggle">
+            <ul>
+                <li>
+                    <div id="donate-section">
+                        <label for="phone-number">Nambari ya Simu (Phone):</label>
+                        <input type="tel" id="phone-number" name="phone-number" placeholder="+255xxxxxxxxx" required>
+                        <button id="donate-button" type="button">Changia TZS 1,500 (Donate)</button>
+                        <p id="donation-status" class="status-message"></p>
+                    </div>
+                </li>
+                </ul>
+        </nav>
+    </div>
     
     <button id="theme-toggle">Toggle Theme</button>
 

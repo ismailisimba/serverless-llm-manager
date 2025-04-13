@@ -254,3 +254,170 @@ body.dark-theme #no-history-msg {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
+
+
+/* --- Menu Container & Toggle --- */
+.menu-container {
+    position: relative; /* Context for absolute positioning of menu */
+    display: flex;
+    justify-content: flex-end; /* Position toggle button to the right */
+    margin-bottom: 15px;
+}
+
+#menu-toggle {
+    /* Use button variables */
+    background-color: var(--button-bg-light);
+    color: var(--button-text-light);
+    border: 1px solid var(--border-color-light);
+    padding: 8px 12px;
+    font-size: 1.2em; /* Make icon slightly larger */
+    cursor: pointer;
+    border-radius: 4px;
+    z-index: 101; /* Ensure toggle is above menu content */
+}
+body.dark-theme #menu-toggle {
+    background-color: var(--button-bg-dark);
+    color: var(--button-text-dark);
+    border-color: var(--border-color-dark);
+}
+
+/* --- Collapsible Menu Content --- */
+.app-menu {
+    /* Use theme variables */
+    background-color: var(--bg-color-light);
+    border: 1px solid var(--border-color-light);
+    border-radius: 5px;
+    padding: 15px;
+    margin: 0; /* Remove default margin */
+    position: absolute;
+    top: 100%; /* Position below the toggle button */
+    right: 0; /* Align to the right */
+    min-width: 300px; /* Minimum width */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 100;
+
+    /* Hide by default */
+    display: none;
+}
+body.dark-theme .app-menu {
+    background-color: var(--result-bg-dark); /* Use a slightly different dark bg */
+    border-color: var(--border-color-dark);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* --- State when menu is open --- */
+.app-menu.menu-open {
+    display: block; /* Show the menu */
+}
+
+/* Reset list style inside menu */
+.app-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    /* display: flex; Remove flex if items stack vertically */
+}
+ .app-menu ul li {
+     margin-bottom: 10px; /* Space between menu items if stacked */
+ }
+ .app-menu ul li:last-child {
+     margin-bottom: 0;
+ }
+
+/* --- Donation Section Styling (using theme variables) --- */
+#donate-section {
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    align-items: flex-start; /* Align items left */
+    gap: 8px;
+    padding: 10px;
+    border: 1px dashed var(--border-color-light); /* Optional border */
+    border-radius: 4px;
+    background-color: var(--result-bg-light); /* Use result bg */
+}
+ body.dark-theme #donate-section {
+     border-color: var(--border-color-dark);
+     background-color: var(--bg-color-dark); /* Use main dark bg */
+ }
+
+
+#donate-section label {
+    font-weight: bold;
+    font-size: 0.9em;
+    /* Color inherits from body */
+}
+
+#donate-section input[type="tel"] {
+    padding: 8px;
+    border: 1px solid var(--border-color-light);
+    background-color: var(--bg-color-light);
+    color: var(--text-color-light);
+    border-radius: 4px;
+    width: 100%; /* Make input take full width */
+    box-sizing: border-box; /* Include padding/border in width */
+}
+body.dark-theme #donate-section input[type="tel"] {
+    border-color: var(--border-color-dark);
+    background-color: var(--result-bg-dark);
+    color: var(--text-color-dark);
+}
+
+#donate-button {
+    padding: 8px 15px;
+    /* Use button variables */
+    background-color: #4CAF50; /* Keep specific color for donate? Or use variable */
+    /* background-color: var(--button-bg-light); */
+    color: white;
+    /* color: var(--button-text-light); */
+    border: 1px solid #3d8b40;
+    /* border-color: var(--border-color-light); */
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    align-self: flex-end; /* Align button to the right */
+}
+ body.dark-theme #donate-button {
+     background-color: #5cb860; /* Slightly lighter green for dark */
+     border-color: #4CAF50;
+     color: #1f1f1f; /* Darker text on lighter green */
+      /* Use button variables */
+     /* background-color: var(--button-bg-dark); */
+     /* color: var(--button-text-dark); */
+     /* border-color: var(--border-color-dark); */
+ }
+
+
+#donate-button:hover {
+    opacity: 0.9;
+}
+
+.status-message {
+    margin: 5px 0 0 0;
+    font-size: 0.9em;
+    font-weight: bold;
+    min-height: 1.2em; /* Prevent layout shifts */
+    width: 100%; /* Take full width */
+    text-align: left;
+}
+
+.status-message.success {
+    color: #4CAF50; /* Green */
+}
+body.dark-theme .status-message.success {
+    color: #81c784; /* Lighter Green */
+}
+
+.status-message.error {
+    color: #f44336; /* Red */
+}
+ body.dark-theme .status-message.error {
+     color: #e57373; /* Lighter Red */
+ }
+
+.status-message.processing {
+    color: #ff9800; /* Orange */
+}
+ body.dark-theme .status-message.processing {
+     color: #ffb74d; /* Lighter Orange */
+ }
