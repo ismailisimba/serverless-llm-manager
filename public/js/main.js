@@ -38,10 +38,10 @@ function initializeUserId() {
             console.warn('crypto.randomUUID not available, using fallback ID:', storedId);
             // Note: localStorage might not be available in all contexts either (e.g., private Browse sometimes)
              try {
-                 localStorage.setItem(storageKey, storedId);
+                  localStorage.setItem(storageKey, storedId);
              } catch (e) {
-                  console.error("LocalStorage not available or write failed. User ID won't persist.", e);
-                  // Keep generated ID just for this session
+                   console.error("LocalStorage not available or write failed. User ID won't persist.", e);
+                   // Keep generated ID just for this session
              }
         }
     } else {
@@ -50,8 +50,6 @@ function initializeUserId() {
     userId = storedId; // Assign to the global variable
 }
 // --- End User ID Section --
-
-
 
 // --- Theme Toggle Functionality ---
 const applyTheme = () => {
@@ -67,7 +65,7 @@ themeToggleButton.addEventListener('click', () => {
   const newTheme = bodyElement.classList.contains('dark-theme') ? 'dark' : 'light';
   localStorage.setItem('theme', newTheme);
 });
-//document.addEventListener('DOMContentLoaded', applyTheme); // Apply theme on load
+
 // --- Initialize User ID and Theme on Load --- <<< MODIFIED >>>
 document.addEventListener('DOMContentLoaded', () => {
     initializeUserId(); // <<< CALL User ID initialization
@@ -77,38 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- Helper Functions ---
 
-/**
- * Appends a complete chat entry (User Prompt + Gemma Response) to the chat history.
- * @param {string} promptText User's prompt.
- * @param {string} responseHtml Rendered HTML response from Gemma (or error text).
- * @param {boolean} isError Indicates if the response is an error message.
- */
-/*function appendChatEntry(promptText, responseHtml, isError = false) {
-    // Remove "No history" message if it exists
-    if (noHistoryMsg) {
-        noHistoryMsg.remove();
-    }
-
-    const entryDiv = document.createElement('div');
-    entryDiv.className = 'history-entry';
-
-    const promptDiv = document.createElement('div');
-    promptDiv.className = 'history-prompt';
-    promptDiv.innerHTML = `<strong>You:</strong><pre>${escapeHtml(promptText)}</pre>`; // Escape user prompt
-
-    const responseDiv = document.createElement('div');
-    responseDiv.className = isError ? 'history-error error-box' : 'history-response result-box';
-    responseDiv.style.marginTop = '10px'; // Add space
-    responseDiv.innerHTML = `<strong>${isError ? 'Error' : 'Gemma'}:</strong><div>${responseHtml}</div>`; // responseHtml is already rendered markdown OR error pre
-
-    entryDiv.appendChild(promptDiv);
-    entryDiv.appendChild(responseDiv);
-    chatOutput.appendChild(entryDiv);
-
-    // Scroll to bottom
-    chatOutput.scrollTop = chatOutput.scrollHeight;
-}*/
-
 function appendChatEntry(promptText, responseHtml, isError = false, isInitialLoad = false) {
     if (noHistoryMsg) {
         noHistoryMsg.remove();
@@ -116,7 +82,7 @@ function appendChatEntry(promptText, responseHtml, isError = false, isInitialLoa
     const entryDiv = document.createElement('div');
     entryDiv.className = 'history-entry';
 
-const promptDiv = document.createElement('div');
+    const promptDiv = document.createElement('div');
     promptDiv.className = 'history-prompt';
     promptDiv.innerHTML = `<strong>You:</strong><pre>${escapeHtml(promptText)}</pre>`;
 
@@ -168,8 +134,6 @@ async function loadInitialHistory() {
 
         // Clear the initial "Loading..." message
         if (noHistoryMsg) noHistoryMsg.remove();
-        // Clear any potential leftover content (though should be empty)
-        // chatOutput.innerHTML = '<h2>Conversation</h2>'; // Keep header
 
         if (history.length > 0) {
             history.forEach(entry => {
@@ -189,20 +153,19 @@ async function loadInitialHistory() {
         } else {
             // Re-add the "No history" message if needed (or create it)
              if (!document.getElementById('no-history-msg')) { // Avoid duplicates
-                 const noHistory = document.createElement('p');
-                 noHistory.id = 'no-history-msg';
-                 noHistory.textContent = 'No chat history yet for this session.';
-                 // Find where to insert it - after the H2?
-                 const historyH2 = chatOutput.querySelector('h2');
-                 if (historyH2) {
-                     historyH2.insertAdjacentElement('afterend', noHistory);
-                 } else {
-                     chatOutput.appendChild(noHistory); // Fallback
-                 }
+                  const noHistory = document.createElement('p');
+                  noHistory.id = 'no-history-msg';
+                  noHistory.textContent = 'No chat history yet for this session.';
+                  // Find where to insert it - after the H2?
+                  const historyH2 = chatOutput.querySelector('h2');
+                  if (historyH2) {
+                        historyH2.insertAdjacentElement('afterend', noHistory);
+                  } else {
+                        chatOutput.appendChild(noHistory); // Fallback
+                  }
              } else {
-                 document.getElementById('no-history-msg').textContent = 'No chat history yet for this session.';
+                  document.getElementById('no-history-msg').textContent = 'No chat history yet for this session.';
              }
-
         }
 
     } catch (error) {
@@ -212,13 +175,18 @@ async function loadInitialHistory() {
     }
 }
 
+/**
+ * Displays an error message in the dedicated JS error box.
+ * @param {string} message The error message to display.
+ */
 function showJsError(message) {
     console.error("Frontend Error:", message);
     jsErrorBox.textContent = message;
     jsErrorBox.style.display = 'block';
     cssLoader.style.display = 'none'; // Hide CSS loader on JS error
     loadingIndicator.style.display = 'none'; // Hide text loader on JS error
-    currentResponsePlaceholder.style.display = 'none';
+    // Ensure the streaming area is also hidden on error
+    if (currentResponsePlaceholder) currentResponsePlaceholder.style.display = 'none';
 }
 
 /**
@@ -236,25 +204,7 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
-/**
- * Displays an error message in the dedicated JS error box.
- * @param {string} message The error message to display.
- */
-/*function showJsError(message) {
-    console.error("Frontend Error:", message);
-    jsErrorBox.textContent = message;
-    jsErrorBox.style.display = 'block';
-    // Hide loading indicator if it was visible
-    loadingIndicator.style.display = 'none';
-    currentResponsePlaceholder.style.display = 'none';
-}*/
-
-
-
-
-
 // --- Form Submission & Streaming Logic ---
-
 promptForm.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -265,44 +215,45 @@ promptForm.addEventListener('submit', async (event) => {
       return;
   }
 
-  
+
     const formData = new FormData(promptForm);
     const userPrompt = formData.get('prompt')?.toString().trim(); // Get prompt from FormData
-  
+
     if (!userPrompt) {
       showJsError("Please enter a prompt.");
       return;
     }
-  
+
     // Check how many files were selected (optional feedback)
     const imageFiles = formData.getAll('images').filter(file => file.size > 0); // Filter out empty file inputs
     console.log(`Form submitted. Prompt: "${userPrompt}", Files: ${imageFiles.length}`);
-  
-  
+
+
     // --- UI Updates ---
     submitButton.disabled = true;
-     // promptTextarea.value = ''; // Don't clear textarea here, clear form below
   promptForm.reset(); // Clear form including file input
     jsErrorBox.style.display = 'none';
     currentResponsePlaceholder.style.display = 'block'; // Show placeholder area
     streamingContent.innerHTML = ''; // Clear previous stream content
     cssLoader.style.display = 'block'; // <<< SHOW CSS Loader >>>
     loadingIndicator.style.display = 'none'; // <<< HIDE Text Loader >>>
-  
+
      // Immediately add user prompt to history (indicate if images were sent)
   const promptDisplay = imageFiles.length > 0
   ? `${userPrompt} (+ ${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''})`
   : userPrompt;
-appendChatEntry(promptDisplay, '<div class="loader" style="margin: 5px 0;"></div>', false);
-const historyEntries = chatOutput.querySelectorAll('.history-entry');
-const latestEntryResponseDiv = historyEntries[historyEntries.length - 1]?.querySelector('.history-response div');
+  // Add a placeholder for the response with a loader inside
+  appendChatEntry(promptDisplay, '<div class="loader" style="margin: 5px 0;"></div>', false);
+  const historyEntries = chatOutput.querySelectorAll('.history-entry');
+  const latestEntryResponseDiv = historyEntries[historyEntries.length - 1]?.querySelector('.history-response div');
 
-  
-  
+
+
+
     // --- Fetch and Process Stream ---
     let accumulatedResponse = '';
     let isStreamStarted = false; // Flag to track if first chunk received
-  
+
     try {
         const response = await fetch('/generate-stream', {
             method: 'POST',
@@ -312,171 +263,287 @@ const latestEntryResponseDiv = historyEntries[historyEntries.length - 1]?.queryS
             },
             body: formData,
           });
-  
-      if (!response.ok) {
-         const errorText = await response.text();
-         throw new Error(`Server error ${response.status}: ${errorText || 'Unknown error'}`);
-      }
-      if (!response.body) throw new Error('Response body is null.');
-  
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let bigResData = ''; // For debugging
-  
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          console.log('Stream finished.');
-          if (!isStreamStarted) { // If stream ends before *any* data/event useful received
-               cssLoader.style.display = 'none'; // Hide loader
-               showJsError("Stream ended without receiving any data.");
-          }
-          // Final rendering should have happened via 'done' event if received
-          try {
-            const doneData = JSON.parse(bigResData);
-            console.log('Received done event:', doneData);
-            accumulatedResponse = doneData.fullResponse || accumulatedResponse;
 
-            // Render final response and update history entry
-            const renderedHtml = marked.parse(accumulatedResponse);
-            if (latestEntryResponseDiv) {
-                 latestEntryResponseDiv.innerHTML = renderedHtml; // Update final history item
-                 latestEntryResponseDiv.closest('.history-entry')?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-             } else {
-                 appendChatEntry(userPrompt, renderedHtml, false); // Fallback add
-             }
-
-            cssLoader.style.display = 'none'; // Hide loader
-            streamingContent.innerHTML = ''; // Clear streaming area
-            currentResponsePlaceholder.style.display = 'none'; // Hide placeholder
-
-            await reader.cancel();
-            return; // Exit processing loop
-          } catch (e) { /* ... (error parsing done data) ... */
-             console.error('Error parsing SSE done event data:', e, 'Data:', data);
-              // Render accumulated markdown as best effort
-             const renderedHtmlOnError = marked.parse(accumulatedResponse);
-             if (latestEntryResponseDiv) {
-                 latestEntryResponseDiv.innerHTML = renderedHtmlOnError;
-             }
-             cssLoader.style.display = 'none';
-             streamingContent.innerHTML = '';
-             currentResponsePlaceholder.style.display = 'none';
-             await reader.cancel();
-             return;
-          }
-          break;
+        if (!response.ok) {
+           const errorText = await response.text();
+           // If the latest history entry exists, update it with the server error
+           if (latestEntryResponseDiv) {
+               const parentEntry = latestEntryResponseDiv.closest('.history-entry');
+               parentEntry.innerHTML = `
+                   <div class="history-prompt"><strong>You:</strong><pre>${escapeHtml(promptDisplay)}</pre></div>
+                   <div class="history-error error-box" style="margin-top: 10px;"><strong>Error:</strong><pre>${escapeHtml(`Server error ${response.status}: ${errorText || 'Unknown error'}`)}</pre></div>
+               `;
+           } else { // Fallback if history entry wasn't added correctly
+               showJsError(`Server error ${response.status}: ${errorText || 'Unknown error'}`);
+           }
+           throw new Error(`Server error ${response.status}: ${errorText || 'Unknown error'}`); // Still throw to stop processing
         }
-  
-         // --- Hide loader on first received chunk --- <<< ADD LOGIC >>>
-         if (!isStreamStarted) {
-             isStreamStarted = true;
-             cssLoader.style.display = 'none'; // Hide CSS loader now
-             streamingContent.innerHTML = '<pre></pre>'; // Add pre tag now ready for text
-         }
-         // --- End hide loader logic ---
-  
-  
-        buffer += decoder.decode(value, { stream: true });
-        let boundaryIndex;
-  
-        while ((boundaryIndex = buffer.indexOf('\n\n')) >= 0) {
-          const message = buffer.substring(0, boundaryIndex);
-          buffer = buffer.substring(boundaryIndex + 2);
-  
-          let event = 'message';
-          let data = '';
-          message.split('\n').forEach(line => { /* ... (SSE parsing remains same) ... */
-               if (line.startsWith('event:')) event = line.substring(6).trim();
-               else if (line.startsWith('data:')) data = line.substring(5).trim();
-          });
-  
-          if (event === 'message' || event === 'data') {
-            try {
-              const parsedData = JSON.parse(data);
-              if (parsedData.text) {
-                accumulatedResponse += parsedData.text;
-                // Append text chunk to the PRE tag within streamingContent
-                const preElement = streamingContent.querySelector('pre');
-                if (preElement) {
-                    preElement.textContent += parsedData.text;
+        if (!response.body) throw new Error('Response body is null.');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finalDoneData = null; // Store the data from the 'done' event
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                console.log('Stream finished.');
+                if (!isStreamStarted && !finalDoneData) { // If stream ends before *any* data/event useful received
+                    cssLoader.style.display = 'none'; // Hide loader
+                    showJsError("Stream ended unexpectedly without receiving any data.");
+                    if (latestEntryResponseDiv) {
+                       latestEntryResponseDiv.innerHTML = `<span class="error-text">[Empty Response]</span>`;
+                    }
+                } else if (finalDoneData) { // Process the 'done' event data received just before stream ended
+                    console.log('Processing final done event data:', finalDoneData);
+                    accumulatedResponse = finalDoneData.fullResponse || accumulatedResponse;
+                    const renderedHtml = marked.parse(accumulatedResponse);
+                     if (latestEntryResponseDiv) {
+                         latestEntryResponseDiv.innerHTML = renderedHtml; // Update final history item
+                         latestEntryResponseDiv.closest('.history-entry')?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                     } else {
+                          // This case shouldn't happen if placeholder was added, but as fallback:
+                         appendChatEntry(promptDisplay, renderedHtml, false);
+                     }
+                } else if (accumulatedResponse && latestEntryResponseDiv) {
+                     // If stream ended without a 'done' event but we got some data
+                     console.warn("Stream ended without a 'done' event. Rendering accumulated content.");
+                     const renderedHtml = marked.parse(accumulatedResponse);
+                     latestEntryResponseDiv.innerHTML = renderedHtml;
                 }
-                currentResponsePlaceholder.scrollTop = currentResponsePlaceholder.scrollHeight;
-              }
-            } catch (e) { console.error('Error parsing SSE data JSON:', e, 'Data:', data); }
-          } else if (event === 'error') {
-            try {
-              const errorData = JSON.parse(data);
-              console.error('Received error event from server:', errorData.message);
-              showJsError(`Server error: ${errorData.message}`); // Show error in dedicated box
-              // Update history entry
-               if (latestEntryResponseDiv) {
-                   const parentEntry = latestEntryResponseDiv.closest('.history-entry');
-                   parentEntry.innerHTML = `
-                       <div class="history-prompt"><strong>You:</strong><pre>${escapeHtml(userPrompt)}</pre></div>
-                       <div class="history-error error-box" style="margin-top: 10px;"><strong>Error:</strong><pre>${escapeHtml(errorData.message)}</pre></div>
-                   `;
-               }
-              cssLoader.style.display = 'none'; // Ensure loader is hidden
-              currentResponsePlaceholder.style.display = 'none'; // Hide placeholder area too
-              await reader.cancel();
-              return;
-            } catch (e) { /* ... (error parsing error data) ... */
-              showJsError('Received unparsable error event from server.');
-              await reader.cancel();
-              return;
+                // Final cleanup regardless of how the stream ended
+                cssLoader.style.display = 'none'; // Ensure loader is hidden
+                streamingContent.innerHTML = ''; // Clear streaming area
+                currentResponsePlaceholder.style.display = 'none'; // Hide placeholder
+                await reader.cancel().catch(e => console.warn("Error cancelling reader:", e)); // Cancel and ignore potential error
+                break; // Exit processing loop
             }
-          } else if (event === 'done') {
-          //Done rendering was here
-          }
-          bigResData=data
-        } // end while boundaryIndex
-      } // end while reader loop
-  
+
+
+            // --- Hide loader on first received chunk --- <<< ADD LOGIC >>>
+            if (!isStreamStarted) {
+                isStreamStarted = true;
+                cssLoader.style.display = 'none'; // Hide CSS loader now
+                // Instead of separate streamingContent, update the history entry directly
+                if (latestEntryResponseDiv) {
+                    latestEntryResponseDiv.innerHTML = '<pre></pre>'; // Replace loader with pre tag for streaming
+                }
+                 currentResponsePlaceholder.style.display = 'none'; // Hide the main placeholder wrapper
+            }
+            // --- End hide loader logic ---
+
+
+            buffer += decoder.decode(value, { stream: true });
+            let boundaryIndex;
+
+            while ((boundaryIndex = buffer.indexOf('\n\n')) >= 0) {
+                const message = buffer.substring(0, boundaryIndex);
+                buffer = buffer.substring(boundaryIndex + 2);
+
+                let event = 'message';
+                let data = '';
+                message.split('\n').forEach(line => {
+                     if (line.startsWith('event:')) event = line.substring(6).trim();
+                     else if (line.startsWith('data:')) data = line.substring(5).trim();
+                });
+
+                if (event === 'message' || event === 'data') {
+                    try {
+                        const parsedData = JSON.parse(data);
+                        if (parsedData.text) {
+                            accumulatedResponse += parsedData.text;
+                            // Append text chunk to the PRE tag within the latest history entry
+                            if (latestEntryResponseDiv) {
+                                const preElement = latestEntryResponseDiv.querySelector('pre');
+                                if (preElement) {
+                                    preElement.textContent += parsedData.text;
+                                     // Scroll the chat output down as content streams in
+                                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                                }
+                            }
+                        }
+                    } catch (e) { console.error('Error parsing SSE data JSON:', e, 'Data:', data); }
+                } else if (event === 'error') {
+                    try {
+                        const errorData = JSON.parse(data);
+                        console.error('Received error event from server:', errorData.message);
+                        showJsError(`Server error: ${errorData.message}`); // Show error in dedicated box
+                        // Update history entry to show the error permanently
+                         if (latestEntryResponseDiv) {
+                             const parentEntry = latestEntryResponseDiv.closest('.history-entry');
+                              parentEntry.innerHTML = `
+                                  <div class="history-prompt"><strong>You:</strong><pre>${escapeHtml(promptDisplay)}</pre></div>
+                                  <div class="history-error error-box" style="margin-top: 10px;"><strong>Error:</strong><pre>${escapeHtml(errorData.message)}</pre></div>
+                              `;
+                         }
+                        cssLoader.style.display = 'none'; // Ensure loader is hidden
+                        currentResponsePlaceholder.style.display = 'none'; // Hide placeholder area too
+                        await reader.cancel().catch(e => console.warn("Error cancelling reader:", e)); // Cancel stream on error
+                        return; // Stop processing on server error event
+                    } catch (e) {
+                         console.error('Error parsing SSE error event data:', e, 'Data:', data);
+                         showJsError('Received unparsable error event from server.');
+                         if (latestEntryResponseDiv) {
+                            latestEntryResponseDiv.innerHTML = `<span class="error-text">[Unparsable Server Error]</span>`;
+                         }
+                         await reader.cancel().catch(err => console.warn("Error cancelling reader:", err));
+                         return;
+                    }
+                } else if (event === 'done') {
+                    try {
+                         // Store the 'done' event data - don't process/render yet
+                         finalDoneData = JSON.parse(data);
+                         console.log("Received 'done' event, data stored.");
+                         // Rendering happens when the reader loop finishes (done=true)
+                    } catch (e) {
+                       console.error('Error parsing SSE done event data:', e, 'Data:', data);
+                       // If done event is bad, render what we have accumulated so far
+                       if (latestEntryResponseDiv) {
+                           const renderedHtmlOnError = marked.parse(accumulatedResponse);
+                           latestEntryResponseDiv.innerHTML = renderedHtmlOnError;
+                       }
+                       // No need to cancel here, the stream will end naturally
+                    }
+                }
+            } // end while boundaryIndex
+        } // end while reader loop
+
     } catch (error) { // Catch errors from fetch() or initial stream setup
+      console.error("Error during fetch/stream setup:", error);
       showJsError(`Error submitting prompt: ${error.message}`);
-       // Update history entry
-      if (latestEntryResponseDiv) {
-          const parentEntry = latestEntryResponseDiv.closest('.history-entry');
-           parentEntry.innerHTML = `
-               <div class="history-prompt"><strong>You:</strong><pre>${escapeHtml(userPrompt)}</pre></div>
-               <div class="history-error error-box" style="margin-top: 10px;"><strong>Error:</strong><pre>${escapeHtml(error.message)}</pre></div>
-           `;
-       }
+       // Update history entry if possible
+       if (latestEntryResponseDiv) {
+           const parentEntry = latestEntryResponseDiv.closest('.history-entry');
+            parentEntry.innerHTML = `
+                 <div class="history-prompt"><strong>You:</strong><pre>${escapeHtml(promptDisplay)}</pre></div>
+                 <div class="history-error error-box" style="margin-top: 10px;"><strong>Error:</strong><pre>${escapeHtml(error.message)}</pre></div>
+             `;
+        }
     } finally {
       submitButton.disabled = false; // Re-enable button
-       // Ensure loaders are hidden if loop exited unexpectedly
+       // Ensure loaders/placeholders are hidden unless an error is explicitly shown
        cssLoader.style.display = 'none';
        loadingIndicator.style.display = 'none';
-       // We leave the placeholder visible if there was content, otherwise hide?
-       // Hiding it seems cleaner unless an error occurred above.
-       // Let's hide it unless an error was shown in jsErrorBox
        if(jsErrorBox.style.display === 'none') {
-          // currentResponsePlaceholder.style.display = 'none'; // Let's keep it visible if stream ended abruptly
+           currentResponsePlaceholder.style.display = 'none'; // Hide if no JS error shown
+           streamingContent.innerHTML = ''; // Clear just in case
        }
     }
-  });
+});
 
 
-
-
-  // --- Download Button Logic ---
+// --- NEW Download Button Logic ---
 const downloadTxtButton = document.getElementById('download-txt');
 const downloadDocxButton = document.getElementById('download-docx');
+const downloadPdfButton = document.getElementById('download-pdf');
 
+/**
+ * Extracts filename from Content-Disposition header.
+ * Handles quoted and unquoted filenames.
+ * @param {string | null} headerValue The Content-Disposition header value.
+ * @returns {string | null} The extracted filename or null if not found.
+ */
+function extractFilename(headerValue) {
+    if (!headerValue) return null;
+
+    // Match filename="xyz"
+    let match = headerValue.match(/filename="([^"]+)"/i);
+    if (match && match[1]) {
+        return match[1];
+    }
+
+    // Match filename=xyz (unquoted)
+    match = headerValue.match(/filename=([^;]+)/i);
+    if (match && match[1]) {
+        // Trim potential whitespace
+        return match[1].trim();
+    }
+
+    return null; // No filename found
+}
+
+/**
+ * Handles the download request using fetch.
+ * @param {string} format - The download format ('txt' or 'docx').
+ */
+async function handleDownload(format) {
+    if (!userId) {
+        showJsError("Cannot download: User ID not available.");
+        return;
+    }
+    console.log(`Requesting download for format: ${format}`);
+    jsErrorBox.style.display = 'none'; // Clear previous errors
+
+    // Add a visual indicator (optional, e.g., disable button)
+    const button = format === 'txt' ? downloadTxtButton : downloadDocxButton;
+    if (button) button.disabled = true;
+
+    const acceptHeader = {
+               'txt': 'text/plain',
+                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'pdf': 'application/pdf'
+            };
+
+    try {
+        const response = await fetch(`/download/${format}`, {
+            method: 'GET',
+            headers: {
+                'X-User-ID': userId, // Include the User ID header
+                'Accept': acceptHeader[format] || '*/*' // Optional: Hint expected type
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server error ${response.status}: ${errorText || 'Download failed'}`);
+        }
+
+        // Get the blob data (the file content)
+        const blob = await response.blob();
+
+        // Extract filename from header, provide default if missing
+        const disposition = response.headers.get('Content-Disposition');
+        const filename = extractFilename(disposition) || `chat_history.${format}`;
+        console.log(`Received blob type: ${blob.type}, size: ${blob.size}, filename: ${filename}`);
+
+
+        // Create a temporary URL for the blob
+        const url = window.URL.createObjectURL(blob);
+
+        // Create a temporary link element to trigger the download
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename; // Set the filename for download prompt
+        document.body.appendChild(a);
+
+        // Trigger the download
+        a.click();
+
+        // Clean up: remove the link and revoke the blob URL
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+    } catch (error) {
+        console.error(`Error downloading ${format}:`, error);
+        showJsError(`Failed to download ${format}: ${error.message}`);
+    } finally {
+        // Re-enable the button
+        if (button) button.disabled = false;
+    }
+}
+
+
+// Add event listeners using the new handler
 if (downloadTxtButton) {
-    downloadTxtButton.addEventListener('click', () => {
-        console.log('Download TXT clicked');
-        // Trigger download by navigating to the backend endpoint
-        window.location.href = '/download/txt';
-    });
+    downloadTxtButton.addEventListener('click', () => handleDownload('txt'));
 }
 
 if (downloadDocxButton) {
-    downloadDocxButton.addEventListener('click', () => {
-        console.log('Download DOCX clicked');
-        // Trigger download by navigating to the backend endpoint
-        window.location.href = '/download/docx';
-    });
+    downloadDocxButton.addEventListener('click', () => handleDownload('docx'));
+}
+
+if (downloadPdfButton) { // <<< ADD Listener for PDF
+      downloadPdfButton.addEventListener('click', () => handleDownload('pdf'));
 }

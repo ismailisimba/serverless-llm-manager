@@ -21,7 +21,9 @@
     "express": "^5.1.0",
     "formidable": "^3.5.2",
     "google-auth-library": "^9.15.1",
+    "html-escaper": "^3.0.3",
     "marked": "^15.0.8",
+    "puppeteer": "^24.6.1",
     "uuid": "^11.1.0"
   }
 }

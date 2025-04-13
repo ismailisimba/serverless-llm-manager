@@ -9,18 +9,20 @@ import { formidable } from 'formidable'; // <<< ADD formidable import
 import * as fs from 'fs/promises'; // <<< ADD fs.promises import
 import { logSessionEvent } from './bigquery-logger.js'; // <<< ADD Logger import
 import { v4 as uuidv4 } from 'uuid'; // <<< ADD UUID import for request ID
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx'; // <<< ADD docx imports
+
 
 
 // Import our Gemma client and GCS Session Manager
 import { fetchIdentityToken, callGemmaService, callGemmaServiceStream } from './gemma-client.js';
 import { sessionMiddleware } from './session-manager.js'; // <<< Use our GCS session middleware
+import DownloadGenerator from './download-generator.js'; // <<< ADD THIS
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const downloadGenerator = new DownloadGenerator(); 
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -375,24 +377,16 @@ app.get('/download/txt', (req, res) => {
         return;
     }
 
-    let formattedText = `Chat History - Session: ${sessionId}\n`;
-    formattedText += "========================================\n\n";
-
-    chatHistory.forEach((entry, index) => {
-        formattedText += `Interaction ${index + 1}:\n`;
-        formattedText += `You:\n${entry.prompt}\n\n`;
-        if (entry.response) {
-            formattedText += `Gemma:\n${entry.response}\n\n`;
-        } else if (entry.error) {
-            formattedText += `Error:\n${entry.error}\n\n`;
-        }
-        formattedText += "---\n\n";
-    });
-
-    // Set headers for file download
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Content-Disposition', 'attachment; filename="chat_history.txt"');
-    res.send(formattedText);
+    try {
+                const formattedText = downloadGenerator.generateTxt(chatHistory, sessionId); // <<< CALL GENERATOR
+                res.setHeader('Content-Type', 'text/plain');
+                res.setHeader('Content-Disposition', 'attachment; filename="chat_history.txt"');
+                res.send(formattedText);
+                console.log(`[Route: /download/txt] [Session: ${sessionId}] TXT file sent.`);
+            } catch (error) {
+                console.error(`[Route: /download/txt] [Session: ${sessionId}] Error generating TXT:`, error);
+                res.status(500).send('Error generating text file.');
+            }
 });
 
 
@@ -407,83 +401,63 @@ app.get('/download/docx', async (req, res) => {
         return;
     }
 
-    const sections = [];
-
-    // Add a title
-     sections.push(
-         new Paragraph({
-             heading: HeadingLevel.TITLE,
-             alignment: AlignmentType.CENTER,
-             children: [new TextRun(`Chat History - Session ${sessionId}`)],
-         })
-     );
-     sections.push(new Paragraph(" ")); // Spacer
-
-    chatHistory.forEach((entry, index) => {
-        // Add prompt
-        sections.push(
-            new Paragraph({
-                heading: HeadingLevel.HEADING_2,
-                children: [new TextRun(`Interaction ${index + 1}: You`)],
-            })
-        );
-        // Handle potential newlines in prompt - split into paragraphs
-        entry.prompt.split('\n').forEach(line => {
-            sections.push(new Paragraph({ children: [new TextRun(line)] }));
-        });
-         sections.push(new Paragraph(" ")); // Spacer
-
-        // Add response or error
-        if (entry.response) {
-            sections.push(
-                new Paragraph({
-                    heading: HeadingLevel.HEADING_2,
-                    children: [new TextRun("Gemma:")],
-                })
-            );
-            // Handle potential newlines in response
-            entry.response.split('\n').forEach(line => {
-                 sections.push(new Paragraph({ children: [new TextRun(line)] }));
-            });
-        } else if (entry.error) {
-             sections.push(
-                new Paragraph({
-                    heading: HeadingLevel.HEADING_2,
-                    children: [new TextRun({ text: "Error:", bold: true })],
-                })
-            );
-            // Handle potential newlines in error
-            entry.error.split('\n').forEach(line => {
-                 sections.push(new Paragraph({ children: [new TextRun({ text: line, color: "FF0000" })] })); // Red text for error
-            });
-        }
-         sections.push(new Paragraph("---")); // Separator
-         sections.push(new Paragraph(" ")); // Spacer
-
-    });
-
-    // Create document
-    const doc = new Document({
-        sections: [{
-            properties: {},
-            children: sections,
-        }],
-    });
 
     try {
         // Generate buffer
-        const buffer = await Packer.toBuffer(doc);
+        const buffer = await downloadGenerator.generateDocx(chatHistory, sessionId); // <<< CALL GENERATOR
+ 
 
         // Set headers for file download
         res.setHeader('Content-Disposition', 'attachment; filename="chat_history.docx"');
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         res.send(buffer);
         console.log(`[Session: ${sessionId}] DOCX file generated and sent.`);
+
     } catch (error) {
          console.error(`[Session: ${sessionId}] Error generating DOCX:`, error);
          res.status(500).send('Error generating Word document.');
     }
+
+
+
 });
+
+
+
+// --- NEW PDF DOWNLOAD ROUTE ---
+app.get('/download/pdf', async (req, res) => {
+    const sessionId = req.gemmaSession.id;
+    const chatHistory = req.gemmaSession.chatHistory || [];
+    console.log(`[Session: ${sessionId}] Requested PDF download.`);
+    const cssPath = path.join(__dirname, 'public', 'css', 'style.css');
+
+    if (chatHistory.length === 0) {
+        res.status(404).send('No chat history found for this session.');
+        return;
+    }
+
+    try {
+        // --- 1. Generate HTML Content ---
+
+        const pdfBuffer = await downloadGenerator.generatePdf(chatHistory, sessionId, cssPath);
+
+        // --- 3. Send PDF Response ---
+        res.setHeader('Content-Disposition', 'attachment; filename="chat_history.pdf"');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.send(pdfBuffer);
+        console.log(`[Session: ${sessionId}] PDF file sent.`);
+
+    } catch (error) {
+        console.error(`[Session: ${sessionId}] Error generating PDF:`, error);
+        res.status(500).send(`Error generating PDF document: ${error.message}`);
+    } finally {
+       
+    }
+});
+
+
+
+
 
 
 

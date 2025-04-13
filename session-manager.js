@@ -65,13 +65,13 @@ async function loadSession(userId, sessionId) {
   const file = bucket.file(objectPath);
 
   try {
-    // console.log(`DEBUG: Attempting download: ${objectPath}`);
+    //console.log(`DEBUG: Attempting download: ${objectPath}`);
     const [dataBuffer] = await file.download();
     const sessionData = JSON.parse(dataBuffer.toString());
     sessionData.chatHistory = Array.isArray(sessionData.chatHistory)
       ? sessionData.chatHistory
       : [];
-    // console.log(`DEBUG: Loaded session ${sessionId} for user ${userId}`);
+    //console.log(`DEBUG: Loaded session ${sessionId} for user ${userId}`);
     return sessionData;
   } catch (error) {
     if (error.code === 404) {
@@ -141,6 +141,7 @@ export async function sessionMiddleware(req, res, next) {
   const userId = req.headers['x-user-id'];
 
   if (!userId) {
+
       // This should ideally not happen if the frontend always sends it.
       // How to handle? Send error? Assign temporary ID? Block?
       // For now, log prominently and block requests that need session saving.
