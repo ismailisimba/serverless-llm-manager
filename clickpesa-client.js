@@ -77,7 +77,7 @@ export async function initiateClickPesaUssdPush(authToken, payload) {
 
         // ClickPesa docs show 200 is success, but payload structure varies.
         // Let's return the whole data object for the route handler to process.
-        console.log('ClickPesa USSD Push response:', response);
+        console.log('ClickPesa USSD Push response:', response?.data||response);
         
         return response.data;
 
@@ -86,5 +86,54 @@ export async function initiateClickPesaUssdPush(authToken, payload) {
          // Try to extract a meaningful error message from ClickPesa response
          const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
         throw new Error(`ClickPesa USSD Push failed: ${errorMessage}`);
+    }
+}
+
+
+
+
+
+// --- NEW: Function to Query Payment Status ---
+/**
+ * Queries the status of a specific payment using its Order Reference.
+ * @param {string} authToken - The full Bearer token.
+ * @param {string} orderReference - The unique order reference of the payment to query.
+ * @returns {Promise<object|null>} The payment status object from ClickPesa (first element of array), or null if not found (404).
+ * @throws {Error} If the API call fails for reasons other than 404.
+ */
+export async function queryClickPesaPaymentStatus(authToken, orderReference) {
+    if (!authToken || !orderReference) {
+        throw new Error('ClickPesa Auth Token and Order Reference are required for status query.');
+    }
+    // ** VERIFY THIS ENDPOINT WITH CLICKPESA ** (especially if it needs /third-parties/ prefix)
+    const url = `${CLICKPESA_BASE_URL}/payments/${encodeURIComponent(orderReference)}`;
+
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                'Authorization': authToken // Assumes token includes "Bearer "
+            },
+            timeout: 10000 // 10 seconds timeout for status check
+        });
+
+        // Docs show response is an array, usually with one item for a specific orderRef query
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+            return response.data[0]; // Return the first (and likely only) payment object
+        } else {
+            // Could happen if the reference is valid but has no status yet? Treat as pending/processing.
+            console.warn(`ClickPesa status query for ${orderReference} returned empty array or unexpected data.`);
+            return { status: 'PENDING' }; // Or 'PROCESSING', decide how to handle
+        }
+
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+            // Payment not found - might not have been processed by provider yet, or bad ref
+            console.log(`ClickPesa status query for ${orderReference} returned 404 (Not Found).`);
+            return null; // Indicate not found
+        } else {
+            console.error(`Error querying ClickPesa payment status for ${orderReference}:`, error.response?.data || error.message);
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+            throw new Error(`ClickPesa status query failed: ${errorMessage}`);
+        }
     }
 }

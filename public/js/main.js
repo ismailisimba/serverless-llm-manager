@@ -590,7 +590,7 @@ const donateButton = document.getElementById('donate-button');
 const phoneNumberInput = document.getElementById('phone-number');
 const donationStatus = document.getElementById('donation-status');
 
-if (donateButton && phoneNumberInput && donationStatus) {
+/*if (donateButton && phoneNumberInput && donationStatus) {
     donateButton.addEventListener('click', async () => {
         const phoneNumber = phoneNumberInput.value.trim();
 
@@ -636,5 +636,27 @@ if (donateButton && phoneNumberInput && donationStatus) {
             donateButton.disabled = false; // Re-enable button
         }
     });
-}
+}*/
+
+
+    // Initialize Donation Handler (if elements exist)
+    if (donateButton && phoneNumberInput && donationStatus) {
+        try {
+            const donationHandler = new DonationHandler(donateButton, phoneNumberInput, donationStatus);
+            donationHandler.init(); // Sets up the event listener
+        } catch (error) {
+            console.error("Failed to initialize Donation Handler:", error);
+            // Optionally display an error to the user in the status element
+            if(statusEl) {
+                statusEl.textContent = "Donation feature failed to load.";
+                statusEl.className = 'status-message error';
+            }
+        }
+    } else {
+        console.warn("Donate button, phone input, or status element not found. Donation feature disabled.");
+    }
+
+
+
+
 

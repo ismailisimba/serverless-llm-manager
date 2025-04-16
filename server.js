@@ -18,7 +18,7 @@ import { sessionMiddleware } from './session-manager.js';
 import DownloadGenerator from './download-generator.js';
 
 // <<< Import the ClickPesa client functions >>>
-import { getClickPesaAuthToken, initiateClickPesaUssdPush } from './clickpesa-client.js';
+import { getClickPesaAuthToken, initiateClickPesaUssdPush, queryClickPesaPaymentStatus } from './clickpesa-client.js';
 
 
 dotenv.config();
@@ -482,9 +482,10 @@ app.post('/api/initiate-donation', async (req, res) => {
                   merchant_ref: orderReference,
                   donation_amount: parseInt(amount),
                   // phone_number_hash: require('crypto').createHash('sha256').update(phoneNumber).digest('hex') // Hash PII if logging
-                  clickpesa_txn_id: clickPesaResponse.id // Log ClickPesa's ID
+                  clickpesa_txn_id: clickPesaResponse.id, // Log ClickPesa's ID
+                  model_name: phoneNumber
              });
-            res.json({ success: true, message: "Tafadhali angalia simu yako kuidhinisha malipo TZS 1500. (Please check your phone to authorize the TZS 1500 payment.)" });
+            res.json({ success: true, message: "Tafadhali angalia simu yako kuidhinisha malipo TZS 1500. (Please check your phone to authorize the TZS 1500 payment.)", orderReference:orderReference });
         } else {
             // Handle cases where initiation didn't return PROCESSING status
             console.warn(`[Session: ${sessionId}] ClickPesa initiation did not return PROCESSING status. Ref: ${orderReference}`, clickPesaResponse);
@@ -497,6 +498,10 @@ app.post('/api/initiate-donation', async (req, res) => {
         res.status(500).json({ success: false, message: `Tatizo la mfumo: ${error.message}` });
     }
 });
+
+
+
+
 
 // --- Route to Handle ClickPesa Webhook Notifications (Concept remains) ---
 app.post('/api/clickpesa-webhook', express.json(), async (req, res) => {
@@ -520,7 +525,8 @@ app.post('/api/clickpesa-webhook', express.json(), async (req, res) => {
                 clickpesa_txn_id: clickpesaTxnId,
                 donation_amount: notification?.collectedAmount ? parseFloat(notification.collectedAmount) : null,
                 // phone_number_hash: notification?.phoneNumber ? require('crypto').createHash('sha256').update(notification.phoneNumber).digest('hex') : null, // Hash PII
-                webhook_payload: JSON.stringify(notification).substring(0, 1000)
+                webhook_payload: JSON.stringify(notification).substring(0, 1000),
+                model_name: notification?.phoneNumber||null
             });
             console.log(`Webhook for OrderRef: ${orderReference} logged. Status: ${transactionStatus}`);
         } catch (logError) {
@@ -533,6 +539,52 @@ app.post('/api/clickpesa-webhook', express.json(), async (req, res) => {
     res.status(200).send('OK'); // Acknowledge receipt
 });
 
+
+
+// --- NEW: Route to Check Donation Status ---
+app.get('/api/check-donation-status/:orderReference', async (req, res) => {
+    const { orderReference } = req.params;
+    const sessionId = req.gemmaSession.id; // Get session ID for logging context
+    const CLICKPESA_CLIENT_ID = process.env.CLICKPESA_CLIENT_ID;
+    const CLICKPESA_API_KEY = process.env.CLICKPESA_API_KEY;
+
+    // Basic validation of the reference format if needed
+    if (!orderReference) {
+         return res.status(400).json({ status: 'ERROR', message: 'Invalid order reference format.' });
+    }
+
+    if (!CLICKPESA_CLIENT_ID || !CLICKPESA_API_KEY) {
+        console.error(`[Session: ${sessionId}] ClickPesa credentials missing for status check. Ref: ${orderReference}`);
+        return res.status(500).json({ status: 'ERROR', message: 'Server configuration error.' });
+    }
+
+    console.log(`[Session: ${sessionId}] Checking status for OrderRef: ${orderReference}`);
+
+    try {
+        // Get a fresh token for the status check
+        const authToken = await getClickPesaAuthToken(CLICKPESA_CLIENT_ID, CLICKPESA_API_KEY);
+
+        // Query the status
+        const statusResult = await queryClickPesaPaymentStatus(authToken, orderReference);
+
+        console.log(statusResult, "statusResult")
+
+        if (statusResult === null) {
+            // Status 404 from ClickPesa - Treat as Pending/Processing as it might just not be found yet
+            console.log(`[Session: ${sessionId}] Status for Ref ${orderReference} not found (404), likely PENDING.`);
+            res.json({ status: 'PENDING' }); // Or 'PROCESSING'
+        } else {
+            // We got a status object
+            console.log(`[Session: ${sessionId}] Status for Ref ${orderReference}: ${statusResult.status}`);
+            // Return the status string directly (e.g., SUCCESS, FAILED, PROCESSING, PENDING)
+            res.json({ status: statusResult.status });
+        }
+
+    } catch (error) {
+        console.error(`[Session: ${sessionId}] Error checking status for Ref ${orderReference}:`, error.message);
+        res.status(500).json({ status: 'ERROR', message: `Failed to check status: ${error.message}` });
+    }
+});
 
 
 
