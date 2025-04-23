@@ -60,7 +60,7 @@ app.post('/generate', express.urlencoded({ extended: true }), async (req, res) =
     }
 
     const targetAudience = process.env.CLOUD_RUN_GEMMA_URL;
-    const modelName = process.env.OLLAMA_MODEL || 'gemma3:4b'; // Ensure this matches your Ollama model
+    const modelName = process.env.OLLAMA_MODEL || 'gemma3:12b'; // Ensure this matches your Ollama model
 
     if (!targetAudience) {
         errorMsg = 'Server configuration error: Target Gemma service URL is not set.';
